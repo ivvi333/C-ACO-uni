@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Graphs/graph.h"
+#include "../Graphs/graph.h"
 
 int main(void){
     int V;
