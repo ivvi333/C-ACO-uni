@@ -6,5 +6,6 @@ int main(void){
     printf("Number of vertecies: ");
     scanf("%i", &V);
     struct Graph *G = create_graph(V);
+    print_graph(G, V);
     return 0;
 }
