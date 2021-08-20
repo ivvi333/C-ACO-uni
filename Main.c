@@ -6,7 +6,6 @@
 
 // Стуктура путь
 struct Path{
-    int V; // количество вершин
     int l; // общая длина пути
     int *A; // массив вершин пути
 };
@@ -28,15 +27,19 @@ double probability(int i, int j, int *tabu, int V, int alpha, int beta, double *
     return P;
 }
 
-struct Path *ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
-    int Q = 0, is_atStart, i, j, *tabu;
-    struct Path *P = malloc(sizeof(struct Path));
-    P -> V = V;
-    P -> A = malloc(V * sizeof(int));
+struct Path *ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, double rf, int t){
+    int Q = 0, i, j, *tabu, rv;
+    double sum_p, r;
+    struct Path *BP = malloc(sizeof(struct Path));
+    BP -> A = malloc(V * sizeof(int));
     for (i = 0; i < V; i++){
+        BP -> A[i] = i;
         Q += G -> A[i][(i + 1) % V];
     }
-    P -> l = Q;
+    BP -> l = Q;
+    struct Path *P = malloc(sizeof(struct Path));
+    P -> A = malloc(V * sizeof(int));
+    P -> l = 0;
     double **tau = (double **) malloc(V * sizeof(double *));
     double **eta = (double **) malloc(V * sizeof(double *));
     for (i = 0; i < V; i++){
@@ -47,21 +50,33 @@ struct Path *ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, do
         for (j = 0; j < V; j++){
             if (i != j){
                 tau[i][j] = tau0;
-                eta[i][j] = 1/(G -> A[i][j]);
+                eta[i][j] = 1/(float) (G -> A[i][j]);
             }
         }
     for (t; t; t--){
         for (int k = 0; k < V; k++){
             i = 0;
             tabu = (int *) calloc(V, sizeof(int));
+            P -> A[i] = k;
             tabu[k]++;
-            is_atStart = 0;
-            while (!is_atStart){
-                j = 0;
-                for (j; j < V; j++){
-                    if (!tabu[j]){
-                        
-                    }
+            while (i < V){
+                sum_p = 0.0;
+                rv = rand() % V;
+                if (((float) rand() / (float) RAND_MAX < rf) && !tabu[rv]){
+                    P -> l += G -> A[P -> A[i]][rv];
+                    P -> A[++i] = rv;
+                    tabu[rv]++;
+                }
+                else {
+                    j = 0;
+                    r = (float) rand() / (float) RAND_MAX;
+                    for (j; j < V && sum_p < r; j++)
+                        if (!tabu[j])
+                            sum_p += probability(P -> A[i], j, tabu, V, alpha, beta, tau, eta);
+                    j = (j - (sum_p? 1: 0)) % V;
+                    P -> l += G -> A[P -> A[i]][j];
+                    P -> A[++i] = j;
+                    tabu[j]++;
                 }
             }
         }
@@ -77,7 +92,7 @@ struct Path *ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, do
 
 int main(void){
     int V, E, src, dst, wt, alpha, beta, t;
-    double p, tau0;
+    double p, tau0, rf;
     printf("Number of vertecies: ");
     scanf("%i", &V);
     struct Graph *G = create_graph(V);
@@ -95,9 +110,11 @@ int main(void){
     scanf("%i %i", &alpha, &beta);
     printf("p (pheromone valitilization coeff.) and tau0 (initial pheromone track): ");
     scanf("%lf %lf", &p, &tau0);
+    printf("rf (random factor for movement): ");
+    scanf("%lf", &rf);
     printf("Number of iterations: ");
     scanf("%i", &t);
-    struct Path *P = ACO_solve(G, V, alpha, beta, p, tau0, t);
+    struct Path *P = ACO_solve(G, V, alpha, beta, p, tau0, rf, t);
     delete_graph(G, V);
     delete_path(P);
     system("Pause");
