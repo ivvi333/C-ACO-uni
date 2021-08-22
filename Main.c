@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <windows.h>
+#include <time.h>
 #include "../Graphs/graph.h"
 
 // Стуктура путь
@@ -25,7 +26,7 @@ void output_path(struct Path *P, int V){
 double probability(int i, int j, int *tabu, int V, int alpha, int beta, double **tau, double **eta){
     if (tabu[j])
         return 0.0;
-    double P = pow(tau[i][j], alpha) * pow(eta[i][j], beta);
+    double P = pow(tau[i][j], (double) alpha) * pow(eta[i][j], (double) beta);
     double sum = 0.0;
     for (int k = 0; k < V; k++)
         if (!tabu[k])
@@ -49,15 +50,15 @@ void upd_pheromone(struct Path *P, int V, int Q, double p, double ***tau){
 }
 
 struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, double rf, int t){
-    int Q = 0, i, j, *tabu, rv;
+    int Q = 500, i, j, *tabu, rv;
     double sum_p, r;
     struct Path BP;
     BP.A = malloc(V * sizeof(int));
+    BP.l = 0;
     for (i = 0; i < V; i++){
         BP.A[i] = i;
-        Q += G -> A[i][(i + 1) % V];
+        BP.l += G -> A[i][(i + 1) % V];
     }
-    BP.l = Q;
     struct Path *P = malloc(V * sizeof(struct Path));
     for (int k = 0; k < V; k++){
         P[k].A = malloc(V * sizeof(int));
@@ -85,10 +86,16 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
             while (i < V){
                 sum_p = 0.0;
                 rv = rand() % V;
-                if (((double) rand() / (double) RAND_MAX < rf) && !tabu[rv]){
-                    P[k].l += G -> A[P -> A[i]][rv];
-                    P[k].A[++i] = rv;
-                    tabu[rv]++;
+                if (((double) rand() / (double) RAND_MAX < rf) && (!tabu[rv] || i == V - 1)){
+                    if (i == V - 1){
+                        P[k].l += G -> A[P -> A[i]][k];
+                        P[k].A[++i] = k;
+                    }
+                    else {
+                        P[k].l += G -> A[P[k].A[i]][rv];
+                        P[k].A[++i] = rv;
+                        tabu[rv]++;
+                    }
                 }
                 else {
                     j = 0;
@@ -125,6 +132,7 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
 }
 
 int main(void){
+    srand(time(NULL));
     int V, E, src, dst, wt, alpha, beta, t;
     double p, tau0, rf;
     printf("Number of vertecies: ");
