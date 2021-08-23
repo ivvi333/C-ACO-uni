@@ -156,8 +156,11 @@ int main(void){
     scanf("%lf", &rf);
     printf("Number of iterations: ");
     scanf("%i", &t);
+    clock_t begin = clock();
     struct Path P = ACO_solve(G, V, alpha, beta, p, tau0, rf, t);
+    clock_t end = clock();
     output_path(&P, V);
+    printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
     delete_graph(G, V);
     system("Pause");
     return 0;
