@@ -41,16 +41,17 @@ void upd_pheromone(struct Path *P, int V, int Q, double p, double ***tau){
         for (int j = 0; j < V; j++)
             if (i != j)
                 (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
-    for (int k = 0; k < V; k++)
+    for (int k = 0; k < V; k++){
+        dlt = (double) Q / (double) P[k].l;
         for (int i = 0; i < V; i++){
-            dlt = (double) Q / (double) P[k].l;
             (*tau)[P[k].A[i]][P[k].A[(i + 1) % V]] += dlt;
             (*tau)[P[k].A[(i + 1) % V]][P[k].A[i]] += dlt;
         }
+    }
 }
 
-struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, double rf, int t){
-    int Q = 500, i, j, *tabu, rv;
+struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
+    int Q = 90, i, j, *tabu;
     double sum_p, r;
     struct Path BP;
     BP.A = malloc(V * sizeof(int));
@@ -74,43 +75,31 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
         for (j = 0; j < V; j++){
             if (i != j){
                 tau[i][j] = tau0;
-                eta[i][j] = 1 / (double) (G -> A[i][j]);
+                eta[i][j] = 1.0 / (double) (G -> A[i][j]);
             }
         }
     for (t; t; t--){
         for (int k = 0; k < V; k++){
             i = 0;
             tabu = (int *) calloc(V, sizeof(int));
+            P[k].l = 0;
             P[k].A[i] = k;
             tabu[k]++;
             while (i < V){
                 sum_p = 0.0;
-                rv = rand() % V;
-                if (((double) rand() / (double) RAND_MAX < rf) && (!tabu[rv] || i == V - 1)){
-                    if (i == V - 1){
-                        P[k].l += G -> A[P -> A[i]][k];
-                        P[k].A[++i] = k;
-                    }
-                    else {
-                        P[k].l += G -> A[P[k].A[i]][rv];
-                        P[k].A[++i] = rv;
-                        tabu[rv]++;
-                    }
-                }
-                else {
-                    j = 0;
+                r = (double) rand() / (double) RAND_MAX;
+                while (r == 0.0 || r == 1.0)
                     r = (double) rand() / (double) RAND_MAX;
-                    for (j; j < V && sum_p < r; j++)
-                        if (!tabu[j])
-                            sum_p += probability(P[k].A[i], j, tabu, V, alpha, beta, tau, eta);
-                    if (sum_p)
-                        j = (j - 1) % V;
-                    else
-                        j = k;
-                    P[k].l += G -> A[P[k].A[i]][j];
-                    P[k].A[++i] = j;
-                    tabu[j]++;
-                }
+                for (j = 0; j < V && sum_p < r; j++)
+                    if (!tabu[j])
+                        sum_p += probability(P[k].A[i], j, tabu, V, alpha, beta, tau, eta);
+                if (i == V - 1)
+                    j = k;
+                else
+                    j = (j - 1) % V;
+                P[k].l += G -> A[P[k].A[i]][j];
+                P[k].A[++i] = j;
+                tabu[j]++; 
             }
             if (P[k].l < BP.l){
                 BP.l = P[k].l;
@@ -134,7 +123,7 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
 int main(void){
     srand(time(NULL));
     int V, E, src, dst, wt, alpha, beta, t;
-    double p, tau0, rf;
+    double p, tau0;
     printf("Number of vertecies: ");
     scanf("%i", &V);
     struct Graph *G = create_graph(V);
@@ -152,12 +141,10 @@ int main(void){
     scanf("%i %i", &alpha, &beta);
     printf("p (pheromone valitilization coeff.) and tau0 (initial pheromone track): ");
     scanf("%lf %lf", &p, &tau0);
-    printf("rf (random factor for movement): ");
-    scanf("%lf", &rf);
     printf("Number of iterations: ");
     scanf("%i", &t);
     clock_t begin = clock();
-    struct Path P = ACO_solve(G, V, alpha, beta, p, tau0, rf, t);
+    struct Path P = ACO_solve(G, V, alpha, beta, p, tau0, t);
     clock_t end = clock();
     output_path(&P, V);
     printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
