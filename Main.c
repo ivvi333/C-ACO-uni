@@ -11,24 +11,23 @@ struct Path{
     int *A; // массив вершин пути
 };
 
-void delete_path(struct Path *P){
-    free(P -> A);
+void delete_path_arr(struct Path *P, int V){
+    for (register int i = 0; i < V; i++)
+        free(P[i].A);
     free(P);
 }
 
 void output_path(struct Path *P, int V){
     printf("\nPath: %i ", P -> A[0]);
-    for (int i = 0; i < V; i++)
-        printf("--> %i ", P -> A[(i + 1) % V]);
+    for (register int i = 1; i <= V; i++)
+        printf("--> %i ", P -> A[i]);
     printf("\nPath length: %i\n", P -> l);
 }
 
 double probability(int i, int j, int *tabu, int V, int alpha, int beta, double **tau, double **eta){
-    if (tabu[j])
-        return 0.0;
     double P = pow(tau[i][j], (double) alpha) * pow(eta[i][j], (double) beta);
     double sum = 0.0;
-    for (int k = 0; k < V; k++)
+    for (register int k = 0; k < V; k++)
         if (!tabu[k])
             sum += pow(tau[i][k], alpha) * pow(eta[i][k], beta);
     P /= sum;
@@ -37,34 +36,36 @@ double probability(int i, int j, int *tabu, int V, int alpha, int beta, double *
 
 void upd_pheromone(struct Path *P, int V, int Q, double p, double ***tau){
     double dlt;
-    for (int i = 0; i < V; i++)
-        for (int j = 0; j < V; j++)
+    for (register int i = 0; i < V; i++)
+        for (register int j = 0; j < V; j++)
             if (i != j)
                 (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
-    for (int k = 0; k < V; k++){
+    for (register int k = 0; k < V; k++){
         dlt = (double) Q / (double) P[k].l;
-        for (int i = 0; i < V; i++){
-            (*tau)[P[k].A[i]][P[k].A[(i + 1) % V]] += dlt;
-            (*tau)[P[k].A[(i + 1) % V]][P[k].A[i]] += dlt;
+        for (register int i = 0; i < V; i++){
+            (*tau)[P[k].A[i]][P[k].A[i + 1]] += dlt;
+            (*tau)[P[k].A[i + 1]][P[k].A[i]] += dlt;
         }
     }
 }
 
 struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
-    int Q = 90, i, j, *tabu;
+    int Q = 90;
+    register int i, j, k;
     double sum_p, r;
     struct Path BP;
-    BP.A = malloc(V * sizeof(int));
+    BP.A = malloc((V + 1) * sizeof(int));
     BP.l = 0;
     for (i = 0; i < V; i++){
         BP.A[i] = i;
         BP.l += G -> A[i][(i + 1) % V];
     }
     struct Path *P = malloc(V * sizeof(struct Path));
-    for (int k = 0; k < V; k++){
-        P[k].A = malloc(V * sizeof(int));
+    for (k = 0; k < V; k++){
+        P[k].A = malloc((V + 1) * sizeof(int));
         P[k].l = 0;
     }
+    int *tabu = (int *) calloc(V, sizeof(int));
     double **tau = (double **) malloc(V * sizeof(double *));
     double **eta = (double **) malloc(V * sizeof(double *));
     for (i = 0; i < V; i++){
@@ -79,9 +80,8 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
             }
         }
     for (t; t; t--){
-        for (int k = 0; k < V; k++){
+        for (k = 0; k < V; k++){
             i = 0;
-            tabu = (int *) calloc(V, sizeof(int));
             P[k].l = 0;
             P[k].A[i] = k;
             tabu[k]++;
@@ -99,14 +99,13 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
                     j = (j - 1) % V;
                 P[k].l += G -> A[P[k].A[i]][j];
                 P[k].A[++i] = j;
-                tabu[j]++; 
+                tabu[j]++;
             }
             if (P[k].l < BP.l){
                 BP.l = P[k].l;
-                for (i = 0; i < V; i++)
-                    BP.A[i] = P[k].A[i];
+                memmove(BP.A, P[k].A, (V + 1) * sizeof(int));
             }
-            free(tabu);
+            memset(tabu, 0, V * sizeof(int));
         }
         upd_pheromone(P, V, Q, p, &tau);
     }
@@ -114,9 +113,10 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
         free(tau[i]);
         free(eta[i]);
     }
-    free(P);
+    delete_path_arr(P, V);
     free(tau);
     free(eta);
+    free(tabu);
     return BP;
 }
 
@@ -127,15 +127,7 @@ int main(void){
     printf("Number of vertecies: ");
     scanf("%i", &V);
     struct Graph *G = create_graph(V);
-    printf("Number of edges: ");
-    scanf("%i", &E);
-    for (E; E; E--){
-        printf("Enter the src vertex, dst vertex and edge weight: ");
-        scanf("%i %i %i", &src, &dst, &wt);
-        create_edge(G, src, dst, wt);
-    }
-    printf("\nEntered graph:\n");
-    print_graph(G, V);
+    input_graph(G);
     printf("\nEnter ACO algorithm parameters:\n");
     printf("alpha (pheromone wt) and beta (visibility wt): ");
     scanf("%i %i", &alpha, &beta);
@@ -148,7 +140,8 @@ int main(void){
     clock_t end = clock();
     output_path(&P, V);
     printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
-    delete_graph(G, V);
+    free(P.A);
+    delete_graph(G);
     system("Pause");
     return 0;
 }
