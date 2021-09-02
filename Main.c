@@ -38,8 +38,7 @@ void upd_pheromone(struct Path *P, int V, int Q, double p, double ***tau){
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++)
-            if (i != j)
-                (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
+            (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
     for (register int k = 0; k < V; k++){
         dlt = (double) Q / (double) P[k].l;
         for (register int i = 0; i < V; i++){
@@ -60,6 +59,7 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
         BP.A[i] = i;
         BP.l += G -> A[i][(i + 1) % V];
     }
+    BP.A[i] = 0;
     struct Path *P = malloc(V * sizeof(struct Path));
     for (k = 0; k < V; k++){
         P[k].A = malloc((V + 1) * sizeof(int));
@@ -83,7 +83,7 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
         for (k = 0; k < V; k++){
             i = 0;
             P[k].l = 0;
-            P[k].A[i] = k;
+            P[k].A[i++] = k;
             tabu[k]++;
             while (i < V){
                 sum_p = 0.0;
@@ -92,15 +92,14 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
                     r = (double) rand() / (double) RAND_MAX;
                 for (j = 0; j < V && sum_p < r; j++)
                     if (!tabu[j])
-                        sum_p += probability(P[k].A[i], j, tabu, V, alpha, beta, tau, eta);
-                if (i == V - 1)
-                    j = k;
-                else
-                    j = (j - 1) % V;
-                P[k].l += G -> A[P[k].A[i]][j];
-                P[k].A[++i] = j;
+                        sum_p += probability(P[k].A[i - 1], j, tabu, V, alpha, beta, tau, eta);
+                j = (j - 1) % V;
+                P[k].l += G -> A[P[k].A[i - 1]][j];
+                P[k].A[i++] = j;
                 tabu[j]++;
             }
+            P[k].l += G -> A[P[k].A[i - 1]][k];
+            P[k].A[i] = k;
             if (P[k].l < BP.l){
                 BP.l = P[k].l;
                 memmove(BP.A, P[k].A, (V + 1) * sizeof(int));
@@ -122,7 +121,7 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
 
 int main(void){
     srand(time(NULL));
-    int V, E, src, dst, wt, alpha, beta, t;
+    int V, alpha, beta, t;
     double p, tau0;
     printf("Number of vertecies: ");
     scanf("%i", &V);
