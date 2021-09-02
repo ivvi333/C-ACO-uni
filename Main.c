@@ -34,11 +34,11 @@ double probability(int i, int j, int *tabu, int V, int alpha, int beta, double *
     return pr;
 }
 
-void upd_pheromone(struct Ant *A, int V, int Q, double p, double ***tau){
+void upd_pheromone(struct Ant *A, int V, int Q, double rho, double ***tau){
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++)
-            (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
+            (*tau)[i][j] = (*tau)[i][j] * (1.0 - rho);
     for (register int k = 0; k < V; k++){
         dlt = (double) Q / (double) A[k].l;
         for (register int i = 0; i < V; i++){
@@ -48,7 +48,7 @@ void upd_pheromone(struct Ant *A, int V, int Q, double p, double ***tau){
     }
 }
 
-struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
+struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, double tau0, int t){
     const int Q = 90;
     register int i, j, k;
     double sum_p, r;
@@ -106,7 +106,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, doub
             }
             memset(tabu, 0, V * sizeof(int));
         }
-        upd_pheromone(A, V, Q, p, &tau);
+        upd_pheromone(A, V, Q, rho, &tau);
     }
     for (i = 0; i < V; i++){
         free(tau[i]);
@@ -122,7 +122,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, doub
 int main(void){
     srand(time(NULL));
     int V, alpha, beta, t;
-    double p, tau0;
+    double rho, tau0;
     printf("Number of vertecies: ");
     scanf("%i", &V);
     struct Graph *G = create_graph(V);
@@ -131,11 +131,11 @@ int main(void){
     printf("alpha (pheromone wt) and beta (visibility wt): ");
     scanf("%i %i", &alpha, &beta);
     printf("p (pheromone valitilization coeff.) and tau0 (initial pheromone track): ");
-    scanf("%lf %lf", &p, &tau0);
+    scanf("%lf %lf", &rho, &tau0);
     printf("Number of iterations: ");
     scanf("%i", &t);
     clock_t begin = clock();
-    struct Ant A = ACO_solve(G, V, alpha, beta, p, tau0, t);
+    struct Ant A = ACO_solve(G, V, alpha, beta, rho, tau0, t);
     clock_t end = clock();
     output_path(&A, V);
     printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
