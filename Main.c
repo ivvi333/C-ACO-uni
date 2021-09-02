@@ -5,65 +5,65 @@
 #include <time.h>
 #include "../Graphs/graph.h"
 
-// Стуктура путь
-struct Path{
-    int l; // общая длина пути
-    int *A; // массив вершин пути
+// Стуктура муравей
+struct Ant{
+    int l; // общая длина пути муравья
+    int *P; // массив вершин пути муравья
 };
 
-void delete_path_arr(struct Path *P, int V){
+void delete_ant_arr(struct Ant *A, int V){
     for (register int i = 0; i < V; i++)
-        free(P[i].A);
-    free(P);
+        free(A[i].P);
+    free(A);
 }
 
-void output_path(struct Path *P, int V){
-    printf("\nPath: %i ", P -> A[0]);
+void output_path(struct Ant *A, int V){
+    printf("\nPath: %i ", A -> P[0]);
     for (register int i = 1; i <= V; i++)
-        printf("--> %i ", P -> A[i]);
-    printf("\nPath length: %i\n", P -> l);
+        printf("--> %i ", A -> P[i]);
+    printf("\nPath length: %i\n", A -> l);
 }
 
 double probability(int i, int j, int *tabu, int V, int alpha, int beta, double **tau, double **eta){
-    double P = pow(tau[i][j], (double) alpha) * pow(eta[i][j], (double) beta);
+    double pr = pow(tau[i][j], (double) alpha) * pow(eta[i][j], (double) beta);
     double sum = 0.0;
     for (register int k = 0; k < V; k++)
         if (!tabu[k])
             sum += pow(tau[i][k], alpha) * pow(eta[i][k], beta);
-    P /= sum;
-    return P;
+    pr /= sum;
+    return pr;
 }
 
-void upd_pheromone(struct Path *P, int V, int Q, double p, double ***tau){
+void upd_pheromone(struct Ant *A, int V, int Q, double p, double ***tau){
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++)
             (*tau)[i][j] = (*tau)[i][j] * (1.0 - p);
     for (register int k = 0; k < V; k++){
-        dlt = (double) Q / (double) P[k].l;
+        dlt = (double) Q / (double) A[k].l;
         for (register int i = 0; i < V; i++){
-            (*tau)[P[k].A[i]][P[k].A[i + 1]] += dlt;
-            (*tau)[P[k].A[i + 1]][P[k].A[i]] += dlt;
+            (*tau)[A[k].P[i]][A[k].P[i + 1]] += dlt;
+            (*tau)[A[k].P[i + 1]][A[k].P[i]] += dlt;
         }
     }
 }
 
-struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
-    int Q = 90;
+struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, double tau0, int t){
+    const int Q = 90;
     register int i, j, k;
     double sum_p, r;
-    struct Path BP;
-    BP.A = malloc((V + 1) * sizeof(int));
-    BP.l = 0;
+    struct Ant BA;
+    BA.P = malloc((V + 1) * sizeof(int));
+    BA.l = 0;
     for (i = 0; i < V; i++){
-        BP.A[i] = i;
-        BP.l += G -> A[i][(i + 1) % V];
+        BA.P[i] = i;
+        BA.l += G -> A[i][(i + 1) % V];
     }
-    BP.A[i] = 0;
-    struct Path *P = malloc(V * sizeof(struct Path));
+    BA.P[i] = 0;
+    struct Ant *A = malloc(V * sizeof(struct Ant));
     for (k = 0; k < V; k++){
-        P[k].A = malloc((V + 1) * sizeof(int));
-        P[k].l = 0;
+        A[k].P = malloc((V + 1) * sizeof(int));
+        A[k].l = 0;
     }
     int *tabu = (int *) calloc(V, sizeof(int));
     double **tau = (double **) malloc(V * sizeof(double *));
@@ -82,8 +82,8 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
     for (t; t; t--){
         for (k = 0; k < V; k++){
             i = 0;
-            P[k].l = 0;
-            P[k].A[i++] = k;
+            A[k].l = 0;
+            A[k].P[i++] = k;
             tabu[k]++;
             while (i < V){
                 sum_p = 0.0;
@@ -92,31 +92,31 @@ struct Path ACO_solve(struct Graph *G, int V, int alpha, int beta, double p, dou
                     r = (double) rand() / (double) RAND_MAX;
                 for (j = 0; j < V && sum_p < r; j++)
                     if (!tabu[j])
-                        sum_p += probability(P[k].A[i - 1], j, tabu, V, alpha, beta, tau, eta);
+                        sum_p += probability(A[k].P[i - 1], j, tabu, V, alpha, beta, tau, eta);
                 j = (j - 1) % V;
-                P[k].l += G -> A[P[k].A[i - 1]][j];
-                P[k].A[i++] = j;
+                A[k].l += G -> A[A[k].P[i - 1]][j];
+                A[k].P[i++] = j;
                 tabu[j]++;
             }
-            P[k].l += G -> A[P[k].A[i - 1]][k];
-            P[k].A[i] = k;
-            if (P[k].l < BP.l){
-                BP.l = P[k].l;
-                memmove(BP.A, P[k].A, (V + 1) * sizeof(int));
+            A[k].l += G -> A[A[k].P[i - 1]][k];
+            A[k].P[i] = k;
+            if (A[k].l < BA.l){
+                BA.l = A[k].l;
+                memmove(BA.P, A[k].P, (V + 1) * sizeof(int));
             }
             memset(tabu, 0, V * sizeof(int));
         }
-        upd_pheromone(P, V, Q, p, &tau);
+        upd_pheromone(A, V, Q, p, &tau);
     }
     for (i = 0; i < V; i++){
         free(tau[i]);
         free(eta[i]);
     }
-    delete_path_arr(P, V);
+    delete_ant_arr(A, V);
     free(tau);
     free(eta);
     free(tabu);
-    return BP;
+    return BA;
 }
 
 int main(void){
@@ -135,11 +135,11 @@ int main(void){
     printf("Number of iterations: ");
     scanf("%i", &t);
     clock_t begin = clock();
-    struct Path P = ACO_solve(G, V, alpha, beta, p, tau0, t);
+    struct Ant A = ACO_solve(G, V, alpha, beta, p, tau0, t);
     clock_t end = clock();
-    output_path(&P, V);
+    output_path(&A, V);
     printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
-    free(P.A);
+    free(A.P);
     delete_graph(G);
     system("Pause");
     return 0;
