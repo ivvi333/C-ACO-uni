@@ -11,12 +11,15 @@ struct Ant{
     int *P; // массив вершин пути муравья
 };
 
+// Удаляет массив структур муравей по адресу A размера V
 void delete_ant_arr(struct Ant *A, int V){
     for (register int i = 0; i < V; i++)
         free(A[i].P);
     free(A);
 }
 
+// Выводит маршрут муравья по адресу A;
+// V + 1 - кол-во посещённых муравьем вершин 
 void output_path(struct Ant *A, int V){
     printf("\nPath: %i ", A -> P[0]);
     for (register int i = 1; i <= V; i++)
@@ -24,6 +27,7 @@ void output_path(struct Ant *A, int V){
     printf("\nPath length: %i\n", A -> l);
 }
 
+// Рассчитывает вероятность перехода муравья из города i в город j
 double probability(int i, int j, int *tabu, int V, int alpha, int beta, double **tau, double **eta){
     double pr = pow(tau[i][j], (double) alpha) * pow(eta[i][j], (double) beta);
     double sum = 0.0;
@@ -34,6 +38,7 @@ double probability(int i, int j, int *tabu, int V, int alpha, int beta, double *
     return pr;
 }
 
+// Обновляет виртуальный феромонный след
 void upd_pheromone(struct Ant *A, int V, int Q, double rho, double ***tau){
     double dlt;
     for (register int i = 0; i < V; i++)
