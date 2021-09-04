@@ -53,8 +53,11 @@ void upd_pheromone(struct Ant *A, int V, int Q, double rho, double ***tau){
     }
 }
 
-struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, double tau0, int t){
-    const int Q = 90;
+struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, double tau0, int t, FILE *fp, FILE *gp){
+    fp = fopen("data.tmp", "w");
+    gp = _popen("gnuplot -persistent", "w");
+    char *GnuCommands[] = {"set title \"Results\"", "plot 'data.tmp'"};
+    const int Q = 100, T = t;
     register int i, j, k;
     double sum_p, r;
     struct Ant BA;
@@ -111,6 +114,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             }
             memset(tabu, 0, V * sizeof(int));
         }
+        fprintf(fp, "%d %d\n", T - t, BA.l);
         upd_pheromone(A, V, Q, rho, &tau);
     }
     for (i = 0; i < V; i++){
@@ -121,11 +125,15 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
     free(tau);
     free(eta);
     free(tabu);
+    for (i = 0; i < 2; i++)
+        fprintf(gp, "%s\n", GnuCommands[i]);
     return BA;
 }
 
 int main(void){
     srand(time(NULL));
+    FILE *fp = NULL;
+    FILE *gnuplot = NULL;
     int V, alpha, beta, t;
     double rho, tau0;
     printf("Number of vertecies: ");
@@ -140,12 +148,14 @@ int main(void){
     printf("Number of iterations: ");
     scanf("%i", &t);
     clock_t begin = clock();
-    struct Ant A = ACO_solve(G, V, alpha, beta, rho, tau0, t);
+    struct Ant A = ACO_solve(G, V, alpha, beta, rho, tau0, t, fp, gnuplot);
     clock_t end = clock();
     output_path(&A, V);
     printf("Execution time: %lf s\n", (double)(end - begin) / CLOCKS_PER_SEC);
     free(A.P);
     delete_graph(G);
+    fclose(fp);
+    _pclose(gnuplot);
     system("Pause");
     return 0;
 }
