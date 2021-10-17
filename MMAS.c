@@ -97,6 +97,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             }
         }
     for (t; t; t--){
+        BI.l = __INT_MAX__;
         for (k = 0; k < V; k++){
             i = 0;
             A[k].l = 0;
