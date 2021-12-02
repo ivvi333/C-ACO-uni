@@ -39,16 +39,16 @@ double probability(int i, int j, int *tabu, int V, int alpha, int beta, double *
 }
 
 // Обновляет виртуальный феромонный след
-void upd_pheromone(struct Ant *A, int V, int Q, double rho, double ***tau){
+void upd_pheromone(struct Ant *A, int V, int Q, double rho, double **tau){
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++)
-            (*tau)[i][j] = (*tau)[i][j] * (1.0 - rho);
+            tau[i][j] = tau[i][j] * (1.0 - rho);
     for (register int k = 0; k < V; k++){
         dlt = (double) Q / (double) A[k].l;
         for (register int i = 0; i < V; i++){
-            (*tau)[A[k].P[i]][A[k].P[i + 1]] += dlt;
-            (*tau)[A[k].P[i + 1]][A[k].P[i]] += dlt;
+            tau[A[k].P[i]][A[k].P[i + 1]] += dlt;
+            tau[A[k].P[i + 1]][A[k].P[i]] += dlt;
         }
     }
 }
