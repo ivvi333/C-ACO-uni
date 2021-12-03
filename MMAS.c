@@ -103,7 +103,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             }
         }
 
-    // Основной цикл (выполняется t раз)
+    // Основной цикл, выполняется t раз
     for (t; t; t--){
         // В начале каждой итерации длина итерационно лучшего маршрута максимальна, т.е. наихудшая
         BI.l = __INT_MAX__;
@@ -113,13 +113,13 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             A[k].l = 0;
             A[k].P[i++] = k;
             tabu[k]++;
-            // Пока маршрут (за искл последней вершины) не получен
+            // Пока маршрут, за исключением последней вершины, не получен
             while (i < V){
                 sum_p = 0.0;
                 r = (double) rand() / (double) RAND_MAX;
                 while (r == 0.0 || r == 1.0)
                     r = (double) rand() / (double) RAND_MAX;
-                // Пока есть города или пока сумма вероятностей меньше случайного числа r ("принцип рулетки")
+                // Пока есть города или пока сумма вероятностей меньше случайного числа r - "принцип рулетки"
                 for (j = 0; j < V && sum_p < r; j++)
                     if (!tabu[j])
                         sum_p += probability(A[k].P[i - 1], j, tabu, V, alpha, beta, tau, eta);
