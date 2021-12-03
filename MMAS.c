@@ -43,7 +43,7 @@ void upd_pheromone(struct Ant BA, int V, double rho, double tau_min, double tau_
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++){
-            tau[i][j] = tau[i][j] * (1.0 - rho);
+            tau[i][j] = tau[i][j] * rho;
             if (tau[i][j] < tau_min)
                 tau[i][j] = tau_min;
         }

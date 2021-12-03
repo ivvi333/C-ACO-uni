@@ -43,7 +43,7 @@ void upd_pheromone(struct Ant *A, int V, int Q, double rho, double **tau){
     double dlt;
     for (register int i = 0; i < V; i++)
         for (register int j = 0; j < V; j++)
-            tau[i][j] = tau[i][j] * (1.0 - rho);
+            tau[i][j] = tau[i][j] * rho;
     for (register int k = 0; k < V; k++){
         dlt = (double) Q / (double) A[k].l;
         for (register int i = 0; i < V; i++){
@@ -115,7 +115,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             memset(tabu, 0, V * sizeof(int));
         }
         fprintf(fp, "%d %d\n", T - t, BA.l);
-        upd_pheromone(A, V, Q, rho, &tau);
+        upd_pheromone(A, V, Q, rho, tau);
     }
     for (i = 0; i < V; i++){
         free(tau[i]);
