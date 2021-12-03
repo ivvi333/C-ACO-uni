@@ -57,17 +57,21 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
     fp = fopen("data.tmp", "w");
     gp = _popen("gnuplot -persistent", "w");
     char *GnuCommands[] = {"set title \"Results\"", "plot 'data.tmp'"};
+
+    // Выделение памяти, инициализация и определение переменных
     const int Q = 1, T = t;
     register int i, j, k;
     double sum_p, r;
     struct Ant BA;
     BA.P = malloc((V + 1) * sizeof(int));
     BA.l = 0;
+    // В начале алгоритма лучшим будем считать маршрут 0 -> 1 -> 2 -> ... -> V - 1 -> 0
     for (i = 0; i < V; i++){
         BA.P[i] = i;
         BA.l += G -> A[i][(i + 1) % V];
     }
     BA.P[i] = 0;
+    // A - массив муравьёв
     struct Ant *A = malloc(V * sizeof(struct Ant));
     for (k = 0; k < V; k++){
         A[k].P = malloc((V + 1) * sizeof(int));
@@ -87,17 +91,22 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
                 eta[i][j] = 1.0 / (double) (G -> A[i][j]);
             }
         }
+
+    // Основной цикл (выполняется t раз)
     for (t; t; t--){
+        // Для каждого муравья в городе k
         for (k = 0; k < V; k++){
             i = 0;
             A[k].l = 0;
             A[k].P[i++] = k;
             tabu[k]++;
+            // Пока маршрут (за искл последней вершины) не получен
             while (i < V){
                 sum_p = 0.0;
                 r = (double) rand() / (double) RAND_MAX;
                 while (r == 0.0 || r == 1.0)
                     r = (double) rand() / (double) RAND_MAX;
+                // Пока есть города или пока сумма вероятностей меньше случайного числа r ("принцип рулетки")
                 for (j = 0; j < V && sum_p < r; j++)
                     if (!tabu[j])
                         sum_p += probability(A[k].P[i - 1], j, tabu, V, alpha, beta, tau, eta);
@@ -108,15 +117,20 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
             }
             A[k].l += G -> A[A[k].P[i - 1]][k];
             A[k].P[i] = k;
+            // Если полученный маршрут короче лучшего
             if (A[k].l < BA.l){
                 BA.l = A[k].l;
                 memmove(BA.P, A[k].P, (V + 1) * sizeof(int));
             }
+            // Очищаем список табу
             memset(tabu, 0, V * sizeof(int));
         }
         fprintf(fp, "%d %d\n", T - t, BA.l);
+        // Обновляем феромон
         upd_pheromone(A, V, Q, rho, tau);
     }
+
+    // Освобождение памяти
     for (i = 0; i < V; i++){
         free(tau[i]);
         free(eta[i]);
