@@ -57,7 +57,7 @@ struct Ant ACO_solve(struct Graph *G, int V, int alpha, int beta, double rho, do
     fp = fopen("data.tmp", "w");
     gp = _popen("gnuplot -persistent", "w");
     char *GnuCommands[] = {"set title \"Results\"", "plot 'data.tmp'"};
-    const int Q = 100, T = t;
+    const int Q = 1, T = t;
     register int i, j, k;
     double sum_p, r;
     struct Ant BA;
